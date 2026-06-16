@@ -2,13 +2,12 @@
 import random
 import streamlit as st
 
-
 # 1. INITIAL SETUP / DATA STORAGE
 if "food_produced" not in st.session_state:
-    st.session_state.food_produced = random.randint(50, 150)  # nosec # Randomized [cite: 203] 
+    st.session_state.food_produced = random.randint(50, 150)  # nosec # Randomized [cite: 203]
 if "food_consumed" not in st.session_state:
     # Must be less than or equal to production [cite: 204]
-    st.session_state.food_consumed = random.randint( # nosec
+    st.session_state.food_consumed = random.randint(  # nosec
         10, st.session_state.food_produced
     )
 if "food_status" not in st.session_state:
@@ -17,7 +16,7 @@ if "food_status" not in st.session_state:
 
 # 2. CORE MATHEMATICAL LOGIC FUNCTIONS
 def calculate_availability(produced, consumed):
-    """Calculate remaining food[cite: 194, 205]."""
+    """Calculate remaining food."""
     return max(0, produced - consumed)
 
 
@@ -31,6 +30,34 @@ def calculate_trucks_needed(available_food, food_per_truck=20):
 
 # 3. UI
 st.title("Food Waste Reduction Platform")
+
+# CUSTOM MANIPULATION OVERRIDE SECTION [cite: 191, 192, 193]
+st.subheader("Manual Data Override (Optional)")
+st.caption(
+    "Leave these at 0 to use the auto-generated random values. Enter values and click apply to override."
+)
+
+# Using number inputs for custom entry
+custom_prod = st.number_input(
+    "Enter Custom Food Produced (kg):", min_value=0, step=1
+)
+custom_cons = st.number_input(
+    "Enter Custom Food Consumed (kg):", min_value=0, step=1
+)
+
+if st.button("Apply Custom Input"):
+    if custom_prod > 0:
+        if custom_cons > custom_prod:
+            st.error("Error: Consumed food cannot be more than produced food!")
+        else:
+            # Overriding the session state with custom data 
+            st.session_state.food_produced = custom_prod
+            st.session_state.food_consumed = custom_cons
+            st.success("Custom inputs applied successfully!")
+    else:
+        st.warning("Please enter a production value greater than 0 to override.")
+
+st.write("---")
 
 # Display Current Stats [cite: 205]
 st.subheader("Daily Logistics Console")
@@ -62,11 +89,10 @@ with col2:
 
 st.write("---")
 
-
-# Day Changer Button 
+# Day Changer Button [cite: 210]
 if st.button("⚠️ Click to Change Day (Reset System)"):
-    st.session_state.food_produced = random.randint(50, 150) # nosec # New random production for the next day [cite: 203]
-    st.session_state.food_consumed = random.randint( # nosec
+    st.session_state.food_produced = random.randint(50, 150)  # nosec # New random production for the next day [cite: 203]
+    st.session_state.food_consumed = random.randint(  # nosec
         10, st.session_state.food_produced
     )
     st.session_state.food_status = "At Restaurant"
