@@ -5,7 +5,7 @@ import streamlit as st
 
 # 1. INITIAL SETUP / DATA STORAGE
 if "food_produced" not in st.session_state:
-    st.session_state.food_produced = random.randint(50, 100)  # nosec # Randomized [cite: 203] 
+    st.session_state.food_produced = random.randint(50, 150)  # nosec # Randomized [cite: 203] 
 if "food_consumed" not in st.session_state:
     # Must be less than or equal to production [cite: 204]
     st.session_state.food_consumed = random.randint( # nosec
@@ -44,7 +44,7 @@ st.metric(label="Available Food Remaining", value=f"{available} kg")
 
 # Truck Calculator [cite: 206]
 trucks = calculate_trucks_needed(available)
-st.metric(label="Trucks Required Today (X)", value=trucks)
+st.metric(label="Trucks Required Today (20 kg capacity)", value=trucks)
 
 st.write("---")
 
@@ -64,7 +64,7 @@ st.write("---")
 
 # Day Changer Button 
 if st.button("⚠️ Click to Change Day (Reset System)"):
-    st.session_state.food_produced = random.randint(50, 100) # nosec # New random production for the next day [cite: 203]
+    st.session_state.food_produced = random.randint(50, 150) # nosec # New random production for the next day [cite: 203]
     st.session_state.food_consumed = random.randint( # nosec
         10, st.session_state.food_produced
     )
