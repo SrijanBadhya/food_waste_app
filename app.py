@@ -5,7 +5,7 @@ import streamlit as st
 
 # 1. INITIAL SETUP / DATA STORAGE
 if "food_produced" not in st.session_state:
-    st.session_state.food_produced = random.randint(50, 100)  # nosec # Randomized [cite: 203] 
+    st.session_state.food_produced = random.randint(50, 150)  # nosec # Randomized [cite: 203] 
 if "food_consumed" not in st.session_state:
     # Must be less than or equal to production [cite: 204]
     st.session_state.food_consumed = random.randint( # nosec
@@ -15,21 +15,21 @@ if "food_status" not in st.session_state:
     st.session_state.food_status = "At Restaurant"  # Initial status [cite: 201]
 
 
-# 2. CORE MATHEMATICAL LOGIC FUNCTIONS (Easy to test with Pytest)
+# 2. CORE MATHEMATICAL LOGIC FUNCTIONS
 def calculate_availability(produced, consumed):
     """Calculate remaining food[cite: 194, 205]."""
     return max(0, produced - consumed)
 
 
 def calculate_trucks_needed(available_food, food_per_truck=20):
-    """Calculate dynamic truck number X based on leftover food[cite: 195, 206]."""
+    """Calculate dynamic truck number based on leftover food[cite: 195, 206]."""
     if available_food <= 0:
         return 0
     # Simple ceiling division
     return (available_food + food_per_truck - 1) // food_per_truck
 
 
-# 3. BARE MINIMUM BUBBLE-GUM UI
+# 3. UI
 st.title("Food Waste Reduction Platform")
 
 # Display Current Stats [cite: 205]
@@ -44,7 +44,7 @@ st.metric(label="Available Food Remaining", value=f"{available} kg")
 
 # Truck Calculator [cite: 206]
 trucks = calculate_trucks_needed(available)
-st.metric(label="Trucks Required Today (X)", value=trucks)
+st.metric(label="Trucks Required Today (20 kg capacity each)", value=trucks)
 
 st.write("---")
 
@@ -65,7 +65,7 @@ st.write("---")
 #testing
 # Day Changer Button 
 if st.button("⚠️ Click to Change Day (Reset System)"):
-    st.session_state.food_produced = random.randint(50, 100) # nosec # New random production for the next day [cite: 203]
+    st.session_state.food_produced = random.randint(50, 150) # nosec # New random production for the next day [cite: 203]
     st.session_state.food_consumed = random.randint( # nosec
         10, st.session_state.food_produced
     )
