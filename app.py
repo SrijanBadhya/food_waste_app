@@ -1,9 +1,11 @@
-'''
-MODULE DOCSTRING:
-This Streamlit app simulates a food waste reduction platform for restaurants. 
-'''
+# pylint: disable=no-member, invalid-name
+"""MODULE DOCSTRING:
+
+This Streamlit app simulates a food waste reduction platform for restaurants.
+"""
 
 import random
+import time
 import streamlit as st
 
 # ==========================================
@@ -16,17 +18,29 @@ if "food_consumed" not in st.session_state:
         10, st.session_state.food_produced
     )
 
-# Track the independent status of each of the 3 possible trucks
-if "truck_1_status" not in st.session_state:
-    st.session_state.truck_1_status = "Ready at Restaurant"
-if "truck_2_status" not in st.session_state:
-    st.session_state.truck_2_status = "Ready at Restaurant"
-if "truck_3_status" not in st.session_state:
-    st.session_state.truck_3_status = "Ready at Restaurant"
+# Track statuses and timestamps for each of the 3 possible trucks
+for i in range(1, 4):
+    if f"truck_{i}_status" not in st.session_state:
+        st.session_state[f"truck_{i}_status"] = "Ready at Restaurant"
+    if f"truck_{i}_dispatch_time" not in st.session_state:
+        st.session_state[f"truck_{i}_dispatch_time"] = None
 
 
 # ==========================================
-# 2. CORE MATHEMATICAL LOGIC FUNCTIONS
+# 2. AUTOMATIC 30-SECOND TIME CHECKER
+# ==========================================
+# This loops through active trucks and handles background state updates cleanly
+current_time = time.time()
+for i in range(1, 4):
+    if st.session_state[f"truck_{i}_status"] == "In Transport":
+        dispatch_time = st.session_state[f"truck_{i}_dispatch_time"]
+        if dispatch_time and (current_time - dispatch_time >= 30):
+            st.session_state[f"truck_{i}_status"] = "Reached NGO Destination"
+            st.rerun()
+
+
+# ==========================================
+# 3. CORE MATHEMATICAL LOGIC FUNCTIONS
 # ==========================================
 def calculate_availability(produced, consumed):
     """Calculate remaining food."""
@@ -41,7 +55,7 @@ def calculate_trucks_needed(available_food, food_per_truck=20):
 
 
 # ==========================================
-# 3. INTERACTION LOGIC (PROCESS BEFORE DRAWING)
+# 4. INTERACTION LOGIC (PROCESS BEFORE DRAWING)
 # ==========================================
 if "custom_prod_input" not in st.session_state:
     st.session_state.custom_prod_input = 0
@@ -50,7 +64,7 @@ if "custom_cons_input" not in st.session_state:
 
 
 # ==========================================
-# 4. UI DRAWING LAYOUT (SIDEBAR SECTIONS)
+# 5. UI DRAWING LAYOUT (SIDEBAR SECTIONS)
 # ==========================================
 st.title("Food Waste Reduction Platform")
 
@@ -87,42 +101,39 @@ trucks = calculate_trucks_needed(available)
 st.sidebar.write("---")
 st.sidebar.write("**Fleet Action Controls**")
 
-# B. Dynamic Vanishing/Appearance of Individual Truck Controls
-if trucks >= 1:
-    st.sidebar.markdown("### 🚛 Truck 1")
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        if st.button("Dispatch T1", key="disp_t1"):
-            st.session_state.truck_1_status = "In Transport"
-            st.rerun()
-    with col2:
-        if st.button("Deliver T1", key="del_t1"):
-            st.session_state.truck_1_status = "Reached NGO Destination"
-            st.rerun()
+# B. Dynamic Fleet Controls with 5-Second Cooldown Enforcement
+for t_id in range(1, 4):
+    if trucks >= t_id if t_id < 3 else trucks == 3:
+        st.sidebar.markdown(f"### 🚛 Truck {t_id}")
+        col1, col2 = st.sidebar.columns(2)
 
-if trucks >= 2:
-    st.sidebar.markdown("### 🚛 Truck 2")
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        if st.button("Dispatch T2", key="disp_t2"):
-            st.session_state.truck_2_status = "In Transport"
-            st.rerun()
-    with col2:
-        if st.button("Deliver T2", key="del_t2"):
-            st.session_state.truck_2_status = "Reached NGO Destination"
-            st.rerun()
+        with col1:
+            if st.button(f"Dispatch T{t_id}", key=f"disp_t{t_id}"):
+                st.session_state[f"truck_{t_id}_status"] = "In Transport"
+                st.session_state[f"truck_{t_id}_dispatch_time"] = time.time()
+                st.rerun()
 
-if trucks == 3:
-    st.sidebar.markdown("### 🚛 Truck 3")
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        if st.button("Dispatch T3", key="disp_t3"):
-            st.session_state.truck_3_status = "In Transport"
-            st.rerun()
-    with col2:
-        if st.button("Deliver T3", key="del_t3"):
-            st.session_state.truck_3_status = "Reached NGO Destination"
-            st.rerun()
+        with col2:
+            if st.button(f"Deliver T{t_id}", key=f"del_t{t_id}"):
+                if st.session_state[f"truck_{t_id}_status"] == "In Transport":
+                    elapsed = (
+                        time.time()
+                        - st.session_state[f"truck_{t_id}_dispatch_time"]
+                    )
+                    if elapsed < 5:
+                        st.sidebar.error(
+                            f"⚠️ Error: Truck {t_id} cannot deliver within 5s of dispatch!"
+                        )
+                    else:
+                        st.session_state[f"truck_{t_id}_status"] = (
+                            "Reached NGO Destination"
+                        )
+                        st.rerun()
+                elif (
+                    st.session_state[f"truck_{t_id}_status"]
+                    == "Ready at Restaurant"
+                ):
+                    st.sidebar.warning(f"Truck {t_id} must be dispatched first!")
 
 if trucks == 0:
     st.sidebar.info("No logistics actions required for 0 trucks.")
@@ -135,32 +146,34 @@ if st.sidebar.button("⚠️ Reset: Change Day"):
     st.session_state.food_consumed = random.randint(  # nosec
         10, st.session_state.food_produced
     )
-    # Reset all fleet positions back to baseline
-    st.session_state.truck_1_status = "Ready at Restaurant"
-    st.session_state.truck_2_status = "Ready at Restaurant"
-    st.session_state.truck_3_status = "Ready at Restaurant"
+    # Reset all fleet positions and timestamps
+    for i in range(1, 4):
+        st.session_state[f"truck_{i}_status"] = "Ready at Restaurant"
+        st.session_state[f"truck_{i}_dispatch_time"] = None
     st.rerun()
 
 
 # ==========================================
-# 5. MAIN DASHBOARD DISPLAY
+# 6. MAIN DASHBOARD DISPLAY
 # ==========================================
 st.subheader("Daily Logistics Console")
 st.text(f"Food Produced: {st.session_state.food_produced} kg")
 st.text(f"Food Consumed: {st.session_state.food_consumed} kg")
 st.metric(label="Available Food Remaining", value=f"{available} kg")
-st.metric(label="Trucks Required Today (20 kg per truck, Max 3 Trucks)", value=trucks)
+st.metric(
+    label="Trucks Required Today (20 kg per truck, Max 3 Trucks)", value=trucks
+)
 
 st.write("---")
 
 st.subheader("Food Status Tracker")
 
-# Display statuses conditionally based on fleet activation
+# Display statuses using clean blue highlight layouts (st.info)
 if trucks >= 1:
-    st.text(f"Truck 1 Status: {st.session_state.truck_1_status}")
+    st.info(f"Truck 1 Status: {st.session_state.truck_1_status}")
 if trucks >= 2:
-    st.text(f"Truck 2 Status: {st.session_state.truck_2_status}")
+    st.info(f"Truck 2 Status: {st.session_state.truck_2_status}")
 if trucks == 3:
-    st.text(f"Truck 3 Status: {st.session_state.truck_3_status}")
+    st.info(f"Truck 3 Status: {st.session_state.truck_3_status}")
 if trucks == 0:
     st.info("Status: No active food shipments today.")
