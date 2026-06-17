@@ -73,12 +73,8 @@ st.sidebar.header("Operations Control Panel")
 # A. Manual Override Form
 with st.sidebar.form("override_form"):
     st.write("Manual Override Options")
-    custom_prod = st.number_input(
-        "Custom Food Produced (kg):", min_value=0, step=1
-    )
-    custom_cons = st.number_input(
-        "Custom Food Consumed (kg):", min_value=0, step=1
-    )
+    custom_prod = st.number_input("Custom Food Produced (kg):", min_value=0, step=1)
+    custom_cons = st.number_input("Custom Food Consumed (kg):", min_value=0, step=1)
     submit_custom = st.form_submit_button("Apply Custom Input")
 
 if submit_custom:
@@ -117,8 +113,7 @@ for t_id in range(1, 4):
             if st.button(f"Deliver T{t_id}", key=f"del_t{t_id}"):
                 if st.session_state[f"truck_{t_id}_status"] == "In Transport":
                     elapsed = (
-                        time.time()
-                        - st.session_state[f"truck_{t_id}_dispatch_time"]
+                        time.time() - st.session_state[f"truck_{t_id}_dispatch_time"]
                     )
                     if elapsed < 5:
                         st.sidebar.error(
@@ -129,10 +124,7 @@ for t_id in range(1, 4):
                             "Reached NGO Destination"
                         )
                         st.rerun()
-                elif (
-                    st.session_state[f"truck_{t_id}_status"]
-                    == "Ready at Restaurant"
-                ):
+                elif st.session_state[f"truck_{t_id}_status"] == "Ready at Restaurant":
                     st.sidebar.warning(f"Truck {t_id} must be dispatched first!")
 
 if trucks == 0:
@@ -160,9 +152,7 @@ st.subheader("Daily Logistics Console")
 st.text(f"Food Produced: {st.session_state.food_produced} kg")
 st.text(f"Food Consumed: {st.session_state.food_consumed} kg")
 st.metric(label="Available Food Remaining", value=f"{available} kg")
-st.metric(
-    label="Trucks Required Today (20 kg per truck, Max 3 Trucks)", value=trucks
-)
+st.metric(label="Trucks Required Today (20 kg per truck, Max 3 Trucks)", value=trucks)
 
 st.write("---")
 
