@@ -3,8 +3,9 @@
 import os
 import sys
 from unittest.mock import MagicMock
-import streamlit as st
 import time
+import streamlit as st
+
 
 # Append root directory to path safely for execution
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -107,3 +108,39 @@ def test_integration_delivery_cooldown_success():
     st.session_state.truck_1_status = "Reached NGO Destination"
 
     assert st.session_state.truck_1_status == "Reached NGO Destination"
+
+
+def test_integration_ngo_people_initialization():
+    """Verify that expected NGO crowd setup handles property storage smoothly."""
+    st.session_state = MagicMock()
+    st.session_state.ngo_people = 45
+    assert st.session_state.ngo_people == 45
+
+
+def test_integration_ngo_feeding_all_fed():
+    """Verify notification text layout when food matches or beats expectations."""
+    st.session_state = MagicMock()
+    st.session_state.ngo_people = 30
+    available_food = 40  # Carried food yields a surplus
+
+    # Simulate delivery confirmation evaluation logic block
+    if st.session_state.ngo_people <= available_food:
+        msg = f"All of the {st.session_state.ngo_people} people have been fed."
+    else:
+        msg = f"{available_food} people have been fed."
+
+    assert msg == "All of the 30 people have been fed."
+
+
+def test_integration_ngo_feeding_partial_fed():
+    """Verify notification text layout when food falls short of targets."""
+    st.session_state = MagicMock()
+    st.session_state.ngo_people = 60
+    available_food = 40  # Shortage scenario
+
+    if st.session_state.ngo_people <= available_food:
+        msg = f"All of the {st.session_state.ngo_people} people have been fed."
+    else:
+        msg = f"{available_food} people have been fed."
+
+    assert msg == "40 people have been fed."

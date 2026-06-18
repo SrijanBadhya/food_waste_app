@@ -17,6 +17,8 @@ if "food_consumed" not in st.session_state:
     st.session_state.food_consumed = random.randint(  # nosec
         10, st.session_state.food_produced
     )
+if "ngo_people" not in st.session_state:
+    st.session_state.ngo_people = random.randint(1, 70)  # nosec
 
 # Track statuses and timestamps for each of the 3 possible trucks
 for i in range(1, 4):
@@ -27,14 +29,14 @@ for i in range(1, 4):
 
 
 # ==========================================
-# 2. AUTOMATIC 30-SECOND TIME CHECKER
+# 2. AUTOMATIC 20-SECOND TIME CHECKER
 # ==========================================
 # This loops through active trucks and handles background state updates cleanly
 current_time = time.time()
 for i in range(1, 4):
     if st.session_state[f"truck_{i}_status"] == "In Transport":
         dispatch_time = st.session_state[f"truck_{i}_dispatch_time"]
-        if dispatch_time and (current_time - dispatch_time >= 30):
+        if dispatch_time and (current_time - dispatch_time >= 20):
             st.session_state[f"truck_{i}_status"] = "Reached NGO Destination"
             st.rerun()
 
@@ -75,9 +77,15 @@ with st.sidebar.form("override_form"):
     st.write("Manual Override Options")
     custom_prod = st.number_input("Custom Food Produced (kg):", min_value=0, step=1)
     custom_cons = st.number_input("Custom Food Consumed (kg):", min_value=0, step=1)
+    # NEW: Form input for custom NGO people count
+    custom_people = st.number_input("Custom NGO People Expected:", min_value=0, step=1)
     submit_custom = st.form_submit_button("Apply Custom Input")
 
 if submit_custom:
+    # NEW: Apply custom people input if provided
+    if custom_people > 0:
+        st.session_state.ngo_people = custom_people
+
     if custom_prod > 0:
         if custom_cons > custom_prod:
             st.sidebar.error("Consumed cannot be more than produced!")
@@ -85,8 +93,10 @@ if submit_custom:
             st.session_state.food_produced = custom_prod
             st.session_state.food_consumed = custom_cons
             st.rerun()
+    elif custom_people > 0:
+        st.rerun()
     else:
-        st.sidebar.warning("Enter production > 0 to override.")
+        st.sidebar.warning("Enter production > 0 or people > 0 to override.")
 
 # Calculate metrics to know how many buttons to show
 available = calculate_availability(
@@ -138,6 +148,9 @@ if st.sidebar.button("⚠️ Reset: Change Day"):
     st.session_state.food_consumed = random.randint(  # nosec
         10, st.session_state.food_produced
     )
+    # NEW: Reset expected NGO people count
+    st.session_state.ngo_people = random.randint(1, 70)  # nosec
+
     # Reset all fleet positions and timestamps
     for i in range(1, 4):
         st.session_state[f"truck_{i}_status"] = "Ready at Restaurant"
@@ -167,3 +180,26 @@ if trucks == 3:
     st.info(f"Truck 3 Status: {st.session_state.truck_3_status}")
 if trucks == 0:
     st.info("Status: No active food shipments today.")
+
+# ==========================================
+# 7. NEW: NGO FEEDING PERFORMANCE ASSESSMENT
+# ==========================================
+if trucks > 0:
+    # Determine if all active trucks assigned to the load have successfully arrived
+    all_trucks_arrived = all(
+        st.session_state.get(f"truck_{i}_status") == "Reached NGO Destination"
+        for i in range(1, trucks + 1)
+    )
+
+    if all_trucks_arrived:
+        st.write("---")
+        st.subheader("NGO Distribution Results")
+        st.text(f"People Expected at NGO: {st.session_state.ngo_people}")
+        st.text(f"Total Food Delivered: {available} kg")
+
+        if st.session_state.ngo_people <= available:
+            st.success(
+                f"All of the {st.session_state.ngo_people} people have been fed."
+            )
+        else:
+            st.warning(f"{available} people have been fed.")
